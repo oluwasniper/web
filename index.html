@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>web</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+        header {
+            background-color: #333;
+            color: #fff;
+            padding: 1em;
+            text-align: center;
+            flex: 0 0 auto;
+        }
+        .body {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #f4f4f4;
+        }
+        footer {
+            background-color: #333;
+            color: #fff;
+            padding: 1em;
+            text-align: center;
+            flex: 0 0 auto;
+        }
+        video {
+            width: 100%;
+            height: auto;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>web</h1>
+    </header>
+    <div class="body">
+        <video id="cameraFeed" autoplay></video>
+    </div>
+    <footer>
+        <button id="startCall">Start Call</button>
+        <button id="endCall">End Call</button>
+        <br>
+        <input type="text" id="meetingId" placeholder="Enter meeting ID">
+        <button id="createLink">Create Meeting Link</button>
+        <p id="linkOutput"></p>
+    </footer>
+
+    <!-- Include Socket.IO client library -->
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        // Establish WebSocket connection
+        const socket = io();
+
+        // Get references to DOM elements
+        const startCallButton = document.getElementById('startCall');
+        const endCallButton = document.getElementById('endCall');
+        const createLinkButton = document.getElementById('createLink');
+        const meetingIdInput = document.getElementById('meetingId');
+        const linkOutput = document.getElementById('linkOutput');
+        const cameraFeed = document.getElementById('cameraFeed');
+
+        // Start video feed
+        startCallButton.addEventListener('click', async () => {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                cameraFeed.srcObject = stream;
+            } catch (error) {
+                console.error('Error accessing media devices.', error);
+            }
+        });
+
+        // Stop video feed
+        endCallButton.addEventListener('click', () => {
+            const stream = cameraFeed.srcObject;
+            if (stream) {
+                const tracks = stream.getTracks();
+                tracks.forEach(track => track.stop());
+                cameraFeed.srcObject = null;
+            }
+        });
+
+        // Create meeting link
+        createLinkButton.addEventListener('click', () => {
+            const meetingId = meetingIdInput.value.trim();
+            if (meetingId) {
+                const meetingLink = `/meeting/${meetingId}`;
+                linkOutput.innerHTML = `Your meeting link: <a href="${meetingLink}" target="_blank">${meetingLink}</a>`;
+            }
+        });
+
+        // Handle incoming messages from the server
+        socket.on('message', (data) => {
+            console.log('Message received from server:', data);
+        });
+
+        // Send a message to the server (example usage)
+        function sendMessage() {
+            const message = 'Hello from client!';
+            socket.emit('message', message);
+        }
+
+        // Example: send a message when the page loads
+        window.onload = () => {
+            sendMessage();
+        };
+    </script>
+</body>
+</html>
